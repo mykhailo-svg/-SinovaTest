@@ -1,46 +1,39 @@
-"use client";
-
 import {
   fetchDogBreeds,
   fetchCatBreeds,
   fetchDogImages,
   fetchCatImages,
 } from "@/services/animals";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import Image from "next/image";
 
-export default function BreedDetail() {
-  const { type, id } = useParams<{ type: string; id: string }>();
+interface Breed {
+  id: string | number;
+  name: string;
+  description?: string;
+}
 
-  //eslint-disable-next-line
-  const [breed, setBreed] = useState<any>(null);
-  const [images, setImages] = useState<string[]>([]);
+interface BreedDetailProps {
+  params: { type: string; id: string };
+}
 
-  useEffect(() => {
-    if (!type || !id) return;
+export default async function BreedDetail({ params }: BreedDetailProps) {
+  const { type, id } = params;
 
-    const loadData = async () => {
-      const breeds =
-        type === "dog" ? await fetchDogBreeds() : await fetchCatBreeds();
-        //eslint-disable-next-line
-      const foundBreed = breeds.find((b: any) => b.id.toString() === id);
-      setBreed(foundBreed);
+  const breeds: Breed[] =
+    type === "dog" ? await fetchDogBreeds() : await fetchCatBreeds();
 
-      if (foundBreed) {
-        const breedImages =
-          type === "dog"
-            ? await fetchDogImages(foundBreed.id)
-            : await fetchCatImages(foundBreed.id);
+  const breed = breeds.find((b) => b.id.toString() === id);
 
-            //eslint-disable-next-line
-        setImages(breedImages.map((img: any) => img.url));
-      }
-    };
+  if (!breed) {
+    return <p className="p-6">Breed not found.</p>;
+  }
 
-    loadData();
-  }, [type, id]);
+  const breedImages: { url: string }[] =
+    typeof breed.id === "number"
+      ? await fetchDogImages(breed.id)
+      : await fetchCatImages(breed.id);
 
-  if (!breed) return <p className="p-6">Loading...</p>;
+  const images = breedImages.map((img) => img.url);
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -49,8 +42,14 @@ export default function BreedDetail() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {images.map((img, i) => (
-          //eslint-disable-next-line
-          <img key={i} src={img} alt={breed.name} className="rounded" />
+          <Image
+            key={i}
+            src={img}
+            alt={breed.name}
+            width={400}
+            height={300}
+            className="rounded"
+          />
         ))}
       </div>
     </div>
