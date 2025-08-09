@@ -1,16 +1,18 @@
+"use client";
+
 import {
   fetchDogBreeds,
   fetchCatBreeds,
   fetchDogImages,
   fetchCatImages,
 } from "@/services/animals";
-import { useRouter } from "next/router";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function BreedDetail() {
-  const router = useRouter();
-  const { type, id } = router.query;
+  const { type, id } = useParams<{ type: string; id: string }>();
 
+  //eslint-disable-next-line
   const [breed, setBreed] = useState<any>(null);
   const [images, setImages] = useState<string[]>([]);
 
@@ -18,16 +20,21 @@ export default function BreedDetail() {
     if (!type || !id) return;
 
     const loadData = async () => {
-      let breeds =
+      const breeds =
         type === "dog" ? await fetchDogBreeds() : await fetchCatBreeds();
-      const breed = breeds.find((b: any) => b.id.toString() === id);
-      setBreed(breed);
+        //eslint-disable-next-line
+      const foundBreed = breeds.find((b: any) => b.id.toString() === id);
+      setBreed(foundBreed);
 
-      const images =
-        type === "dog"
-          ? await fetchDogImages(breed.id)
-          : await fetchCatImages(breed.id);
-      setImages(images.map((img: any) => img.url));
+      if (foundBreed) {
+        const breedImages =
+          type === "dog"
+            ? await fetchDogImages(foundBreed.id)
+            : await fetchCatImages(foundBreed.id);
+
+            //eslint-disable-next-line
+        setImages(breedImages.map((img: any) => img.url));
+      }
     };
 
     loadData();
@@ -42,6 +49,7 @@ export default function BreedDetail() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {images.map((img, i) => (
+          //eslint-disable-next-line
           <img key={i} src={img} alt={breed.name} className="rounded" />
         ))}
       </div>

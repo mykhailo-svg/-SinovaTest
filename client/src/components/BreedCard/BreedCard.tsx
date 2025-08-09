@@ -10,6 +10,7 @@ interface BreedCardProps {
 export const BreedCard = ({ id, name, image, type }: BreedCardProps) => (
   <Link href={`/breed/${type}/${id}`}>
     <div className="rounded-lg shadow-md p-4 hover:shadow-xl transition">
+      {/* eslint-disable-next-line */}
       <img
         src={image}
         alt={name}
