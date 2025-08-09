@@ -5,9 +5,9 @@ export type Breed = {
   image?: { url: string };
 };
 
-export type FormattedBreed = Breed & {
+export type FormattedBreed = Omit<Breed, "image"> & {
   type: BREED_TYPE;
-  image: string;
+  image: string | undefined;
 };
 
 export enum BREED_TYPE {
