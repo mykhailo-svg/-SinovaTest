@@ -2,14 +2,14 @@ import { Breed, BREED_TYPE } from "@/globalTypes";
 import { fetchBreedImages, fetchBreedsByType } from "@/services/animals";
 import Image from "next/image";
 
-interface BreedDetailProps {
-  params: { type: BREED_TYPE; id: string };
-}
+type BreedDetailProps = {
+  params: Promise<{ type: BREED_TYPE; id: string }>;
+};
 
 export default async function BreedDetail({ params }: BreedDetailProps) {
-  const { type: type, id } = params;
+  const { type: type, id } = await params;
 
-  const breeds: Breed[] = await fetchBreedsByType(type);
+  const breeds: Breed[] = await fetchBreedsByType(type as BREED_TYPE);
 
   const breed = breeds.find((b) => b.id.toString() === id);
 
@@ -17,7 +17,7 @@ export default async function BreedDetail({ params }: BreedDetailProps) {
     return <p className="p-6">Breed not found.</p>;
   }
 
-  const breedImages = await fetchBreedImages(type, breed.id);
+  const breedImages = await fetchBreedImages(type as BREED_TYPE, breed.id);
 
   const images = breedImages.map((img) => img.url);
 
