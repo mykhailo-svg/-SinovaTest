@@ -1,13 +1,7 @@
+import type { FormattedBreed } from "@/globalTypes";
 import Link from "next/link";
 
-interface BreedCardProps {
-  id: string;
-  name: string;
-  image: string;
-  type: "dog" | "cat";
-}
-
-export const BreedCard = ({ id, name, image, type }: BreedCardProps) => (
+export const BreedCard = ({ id, name, image, type }: FormattedBreed) => (
   <Link href={`/breed/${type}/${id}`}>
     <div className="rounded-lg shadow-md p-4 hover:shadow-xl transition">
       {/* eslint-disable-next-line */}

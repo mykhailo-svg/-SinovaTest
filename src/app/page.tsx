@@ -1,13 +1,14 @@
 "use client";
 
+import { chunk } from "lodash-es";
 import { BreedCard } from "@/components/BreedCard";
 import SearchBar from "@/components/SearchBar/SearchBar";
+import { Breed, FormattedBreed } from "@/globalTypes";
 import { fetchCatBreeds, fetchDogBreeds } from "@/services/animals";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  //eslint-disable-next-line
-  const [breeds, setBreeds] = useState<any[]>([]);
+  const [breeds, setBreeds] = useState<FormattedBreed[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -17,39 +18,10 @@ export default function Home() {
         fetchDogBreeds(),
       ]);
 
-      // Fetch missing images for cats
-      const catBreedsWithImages = await Promise.all(
-        //eslint-disable-next-line
-        cats.map(async (c: any) => {
-          let imageUrl = c.image?.url;
-          if (!imageUrl) {
-            const imgRes = await fetch(
-              `https://api.thecatapi.com/v1/images/search?breed_id=${c.id}&limit=1`
-            );
-            const imgData = await imgRes.json();
-            imageUrl = imgData[0]?.url || "/placeholder.png";
-          }
-          return { id: c.id, name: c.name, image: imageUrl, type: "cat" };
-        })
-      );
+      const formattedCats = await formatBreeds(cats, "cat");
+      const formattedDogs = await formatBreeds(dogs, "dog");
 
-      // Fetch missing images for dogs
-      const dogBreedsWithImages = await Promise.all(
-        //eslint-disable-next-line
-        dogs.map(async (d: any) => {
-          let imageUrl = d.image?.url;
-          if (!imageUrl) {
-            const imgRes = await fetch(
-              `https://api.thedogapi.com/v1/images/search?breed_id=${d.id}&limit=1`
-            );
-            const imgData = await imgRes.json();
-            imageUrl = imgData[0]?.url || "/placeholder.png";
-          }
-          return { id: d.id, name: d.name, image: imageUrl, type: "dog" };
-        })
-      );
-
-      setBreeds([...catBreedsWithImages, ...dogBreedsWithImages]);
+      setBreeds([...formattedCats, ...formattedDogs]);
     };
 
     loadBreeds();
@@ -72,4 +44,58 @@ export default function Home() {
       </div>
     </main>
   );
+}
+
+async function formatBreeds(breeds: Breed[], type: FormattedBreed["type"]) {
+  const chunkedBreeds = chunk(breeds, 10);
+
+  let formattedBreeds: FormattedBreed[] = [];
+
+  for (const chunk of chunkedBreeds) {
+    const formattedChunk = await Promise.all(
+      chunk.map(async (c) => {
+        let imageUrl = c.image?.url;
+        if (!imageUrl) {
+          try {
+            const imgData = await fetchWithRetry(
+              `https://api.the${type}api.com/v1/images/search?breed_id=${c.id}&limit=1`
+            );
+            imageUrl = imgData[0]?.url || "/placeholder.png";
+          } catch (error) {
+            // fallback on error
+            imageUrl = "/placeholder.png";
+          }
+        }
+        return { id: c.id, name: c.name, image: imageUrl, type };
+      })
+    );
+
+    formattedBreeds = [
+      ...formattedBreeds,
+      ...(formattedChunk as FormattedBreed[]),
+    ];
+  }
+
+  return formattedBreeds;
+}
+
+async function fetchWithRetry(
+  url: string,
+  options = {},
+  retries = 3,
+  delay = 500
+): Promise<any> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, options);
+      if (!res.ok) throw new Error(`Fetch failed with status ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      if (i < retries - 1) {
+        await new Promise((r) => setTimeout(r, delay));
+      } else {
+        throw err;
+      }
+    }
+  }
 }

@@ -1,3 +1,4 @@
+import { Breed } from "@/globalTypes";
 import {
   fetchDogBreeds,
   fetchCatBreeds,
@@ -5,12 +6,6 @@ import {
   fetchCatImages,
 } from "@/services/animals";
 import Image from "next/image";
-
-interface Breed {
-  id: string | number;
-  name: string;
-  description?: string;
-}
 
 interface BreedDetailProps {
   params: { type: string; id: string };

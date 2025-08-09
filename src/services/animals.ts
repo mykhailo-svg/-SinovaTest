@@ -1,10 +1,10 @@
 export const fetchDogBreeds = async () => {
-  const res = await fetch("https://api.thedogapi.com/v1/breeds");
+  const res = await fetch("https://api.thedogapi.com/v1/breeds?limit=20");
   return res.json();
 };
 
 export const fetchCatBreeds = async () => {
-  const res = await fetch("https://api.thecatapi.com/v1/breeds");
+  const res = await fetch("https://api.thecatapi.com/v1/breeds?limit=20");
   return res.json();
 };
 
