@@ -1,23 +1,20 @@
-export const fetchDogBreeds = async () => {
-  const res = await fetch("https://api.thedogapi.com/v1/breeds?limit=20");
+import { Breed, BREED_TYPE } from "@/globalTypes";
+import { getApiBaseUrlByBreedType } from "./api";
+
+export const fetchBreedsByType = async (type: BREED_TYPE) => {
+  const res = await fetch(getApiBaseUrlByBreedType(type) + "/breeds?limit=20");
+
   return res.json();
 };
 
-export const fetchCatBreeds = async () => {
-  const res = await fetch("https://api.thecatapi.com/v1/breeds?limit=20");
-  return res.json();
-};
-
-export const fetchDogImages = async (breedId: number) => {
+export const fetchBreedImages = async (
+  type: BREED_TYPE,
+  breedId: string | number
+) => {
   const res = await fetch(
-    `https://api.thedogapi.com/v1/images/search?breed_id=${breedId}&limit=8`
+    getApiBaseUrlByBreedType(type) +
+      `/images/search?breed_id=${breedId}&limit=8`
   );
-  return res.json();
-};
 
-export const fetchCatImages = async (breedId: string) => {
-  const res = await fetch(
-    `https://api.thecatapi.com/v1/images/search?breed_id=${breedId}&limit=8`
-  );
-  return res.json();
+  return res.json() as Promise<NonNullable<Breed["image"]>[]>;
 };

@@ -1,21 +1,15 @@
-import { Breed } from "@/globalTypes";
-import {
-  fetchDogBreeds,
-  fetchCatBreeds,
-  fetchDogImages,
-  fetchCatImages,
-} from "@/services/animals";
+import { Breed, BREED_TYPE } from "@/globalTypes";
+import { fetchBreedImages, fetchBreedsByType } from "@/services/animals";
 import Image from "next/image";
 
 interface BreedDetailProps {
-  params: { type: string; id: string };
+  params: { type: BREED_TYPE; id: string };
 }
 
 export default async function BreedDetail({ params }: BreedDetailProps) {
-  const { type, id } = params;
+  const { type: type, id } = params;
 
-  const breeds: Breed[] =
-    type === "dog" ? await fetchDogBreeds() : await fetchCatBreeds();
+  const breeds: Breed[] = await fetchBreedsByType(type);
 
   const breed = breeds.find((b) => b.id.toString() === id);
 
@@ -23,10 +17,7 @@ export default async function BreedDetail({ params }: BreedDetailProps) {
     return <p className="p-6">Breed not found.</p>;
   }
 
-  const breedImages: { url: string }[] =
-    typeof breed.id === "number"
-      ? await fetchDogImages(breed.id)
-      : await fetchCatImages(breed.id);
+  const breedImages = await fetchBreedImages(type, breed.id);
 
   const images = breedImages.map((img) => img.url);
 

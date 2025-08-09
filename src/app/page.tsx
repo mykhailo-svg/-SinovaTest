@@ -3,51 +3,89 @@
 import { chunk } from "lodash-es";
 import { BreedCard } from "@/components/BreedCard";
 import SearchBar from "@/components/SearchBar/SearchBar";
-import { Breed, FormattedBreed } from "@/globalTypes";
-import { fetchCatBreeds, fetchDogBreeds } from "@/services/animals";
-import { useEffect, useState } from "react";
+import { Breed, BREED_TYPE, FormattedBreed } from "@/globalTypes";
+import { fetchBreedsByType } from "@/services/animals";
+import { useEffect, useMemo, useState } from "react";
+import { getApiBaseUrlByBreedType } from "@/services/api";
+
+type BreedsState = {
+  items: FormattedBreed[];
+  isLoading: boolean;
+};
 
 export default function Home() {
-  const [breeds, setBreeds] = useState<FormattedBreed[]>([]);
+  const [breeds, setBreeds] = useState<BreedsState>({
+    items: [],
+    isLoading: true,
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const loadBreeds = async () => {
-      const [cats, dogs] = await Promise.all([
-        fetchCatBreeds(),
-        fetchDogBreeds(),
-      ]);
+      let breedsItems: BreedsState["items"] = [];
 
-      const formattedCats = await formatBreeds(cats, "cat");
-      const formattedDogs = await formatBreeds(dogs, "dog");
+      const breedsToFetch = Object.values(BREED_TYPE) as BREED_TYPE[];
 
-      setBreeds([...formattedCats, ...formattedDogs]);
+      const breedsGroups = await Promise.all(
+        breedsToFetch.map((type) => {
+          return (async () => {
+            const breeds = await fetchBreedsByType(type);
+
+            return {
+              items: breeds,
+              type,
+            };
+          })();
+        })
+      );
+
+      for (const breedsGroup of breedsGroups) {
+        const formattedBreedsGroup = await formatBreeds(
+          breedsGroup.items,
+          breedsGroup.type
+        );
+
+        breedsItems = [...breedsItems, ...formattedBreedsGroup];
+      }
+
+      setBreeds({ items: breedsItems, isLoading: false });
     };
 
     loadBreeds();
   }, []);
 
-  const filteredBreeds = breeds.filter((b) =>
+  const filteredBreeds = breeds.items.filter((b) =>
     b.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const autocompleteNames = useMemo(() => {
+    return breeds.items.map((breed) => breed.name);
+  }, [breeds]);
 
   return (
     <main className="max-w-6xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4 text-center">
         🐾 Pet Breed Explorer
       </h1>
-      <SearchBar onSearch={setSearchTerm} />
+
+      <SearchBar names={autocompleteNames} onSearch={setSearchTerm} />
+
+      {breeds.isLoading && "Loading..."}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {filteredBreeds.map((breed) => (
-          <BreedCard key={`${breed.type}-${breed.id}`} {...breed} />
-        ))}
+        {filteredBreeds.length || breeds.isLoading
+          ? filteredBreeds.map((breed) => (
+              <BreedCard key={`${breed.type}-${breed.id}`} {...breed} />
+            ))
+          : "No breeds found..."}
       </div>
     </main>
   );
 }
 
 async function formatBreeds(breeds: Breed[], type: FormattedBreed["type"]) {
-  const chunkedBreeds = chunk(breeds, 10);
+  const chunkedBreeds = chunk(breeds, 20);
 
   let formattedBreeds: FormattedBreed[] = [];
 
@@ -58,7 +96,9 @@ async function formatBreeds(breeds: Breed[], type: FormattedBreed["type"]) {
         if (!imageUrl) {
           try {
             const imgData = await fetchWithRetry(
-              `https://api.the${type}api.com/v1/images/search?breed_id=${c.id}&limit=1`
+              `${getApiBaseUrlByBreedType(type)}/images/search?breed_id=${
+                c.id
+              }&limit=1`
             );
             imageUrl = imgData[0]?.url || "/placeholder.png";
           } catch (error) {

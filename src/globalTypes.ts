@@ -6,6 +6,11 @@ export type Breed = {
 };
 
 export type FormattedBreed = Breed & {
-  type: "cat" | "dog";
+  type: BREED_TYPE;
   image: string;
 };
+
+export enum BREED_TYPE {
+  CAT = "cat",
+  DOG = "dog",
+}

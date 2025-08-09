@@ -5,8 +5,6 @@
   --foreground: #171717;
 }
 
-
-
 body {
   color: var(--background);
   background: var(--foreground);
